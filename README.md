@@ -1,2 +1,2 @@
 # demo
-联系vibe coding的资源库
+练习vibe coding的资源库
