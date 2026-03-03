@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>世界时钟选项卡</title>
+    <style>
+      :root {
+        font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: #1f2937;
+        background: linear-gradient(120deg, #eff6ff, #f8fafc);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .card {
+        width: min(680px, 90vw);
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+        padding: 32px;
+      }
+
+      .time-label {
+        color: #475569;
+        font-size: 14px;
+        margin-bottom: 6px;
+      }
+
+      .time {
+        font-size: clamp(30px, 6vw, 48px);
+        font-weight: 700;
+        letter-spacing: 1px;
+        margin: 0;
+      }
+
+      .city {
+        margin-top: 10px;
+        color: #0f766e;
+        font-weight: 600;
+      }
+
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 28px;
+      }
+
+      .tab {
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: #334155;
+        border-radius: 999px;
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tab:hover {
+        border-color: #0ea5e9;
+        color: #0369a1;
+      }
+
+      .tab.active {
+        background: #0ea5e9;
+        border-color: #0ea5e9;
+        color: white;
+        box-shadow: 0 8px 20px rgba(14, 165, 233, 0.25);
+      }
+
+      .hint {
+        margin-top: 8px;
+        color: #64748b;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="time-label">当前时间</div>
+      <h1 id="clock" class="time">--:--:--</h1>
+      <div id="cityName" class="city">北京</div>
+
+      <section class="tabs" aria-label="城市时区切换">
+        <button class="tab active" data-city="北京" data-timezone="Asia/Shanghai">北京</button>
+        <button class="tab" data-city="香港" data-timezone="Asia/Hong_Kong">香港</button>
+        <button class="tab" data-city="东京" data-timezone="Asia/Tokyo">东京</button>
+        <button class="tab" data-city="伦敦" data-timezone="Europe/London">伦敦</button>
+        <button class="tab" data-city="纽约" data-timezone="America/New_York">纽约</button>
+      </section>
+      <p class="hint">点击下方标签可切换到对应城市时区（默认北京）。</p>
+    </main>
+
+    <script>
+      const clockEl = document.getElementById('clock');
+      const cityEl = document.getElementById('cityName');
+      const tabs = document.querySelectorAll('.tab');
+
+      let selectedCity = '北京';
+      let selectedTimeZone = 'Asia/Shanghai';
+
+      function formatTimeForTimeZone(timeZone) {
+        const now = new Date();
+        return new Intl.DateTimeFormat('zh-CN', {
+          timeZone,
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        }).format(now);
+      }
+
+      function updateClock() {
+        clockEl.textContent = formatTimeForTimeZone(selectedTimeZone);
+        cityEl.textContent = selectedCity;
+      }
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          tabs.forEach((item) => item.classList.remove('active'));
+          tab.classList.add('active');
+          selectedCity = tab.dataset.city;
+          selectedTimeZone = tab.dataset.timezone;
+          updateClock();
+        });
+      });
+
+      updateClock();
+      setInterval(updateClock, 1000);
+    </script>
+  </body>
+</html>
