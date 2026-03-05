@@ -8,17 +8,23 @@
 - **抽帧引擎**：ffmpeg（通过 Python `subprocess` 调用）
 - **前端**：原生 HTML/CSS
 
-## 使用方式
+## 使用方式（本地直接可访问）
 
 1. 确保系统已安装 `ffmpeg`：
    ```bash
    ffmpeg -version
    ```
-2. 启动服务：
+2. 在项目目录启动服务：
    ```bash
    python app.py
    ```
 3. 浏览器打开：`http://localhost:5000`
+
+> 想要启动后自动打开浏览器：
+>
+> ```bash
+> python app.py --open
+> ```
 
 ## 功能
 

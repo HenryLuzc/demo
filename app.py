@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import argparse
 import cgi
 import html
-import io
 import mimetypes
 import shutil
 import subprocess
 import uuid
+import webbrowser
 import zipfile
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -32,7 +33,15 @@ def ffmpeg_exists() -> bool:
 def extract_frames(video_path: Path, out_dir: Path, fps: float) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
-        "ffmpeg", "-i", str(video_path), "-vf", f"fps={fps}", "-q:v", "2", str(out_dir / "frame_%06d.jpg"), "-y"
+        "ffmpeg",
+        "-i",
+        str(video_path),
+        "-vf",
+        f"fps={fps}",
+        "-q:v",
+        "2",
+        str(out_dir / "frame_%06d.jpg"),
+        "-y",
     ]
     subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -121,7 +130,7 @@ class Handler(BaseHTTPRequestHandler):
         video_field = form["video"] if "video" in form else None
         fps_raw = form.getfirst("fps", "1")
 
-        if not video_field or not getattr(video_field, "filename", ""):
+        if video_field is None or not getattr(video_field, "filename", ""):
             return self._send_bytes(render_page(error="请先选择视频文件。"))
 
         filename = Path(video_field.filename).name
@@ -168,7 +177,24 @@ class Handler(BaseHTTPRequestHandler):
         )
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="视频抽帧工具（本地 Web 服务）")
+    parser.add_argument("--host", default="127.0.0.1", help="监听地址，默认 127.0.0.1")
+    parser.add_argument("--port", default=5000, type=int, help="监听端口，默认 5000")
+    parser.add_argument("--open", action="store_true", dest="open_browser", help="启动后自动打开浏览器")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    server = ThreadingHTTPServer(("0.0.0.0", 5000), Handler)
-    print("Server running on http://0.0.0.0:5000")
+    args = parse_args()
+    url = f"http://localhost:{args.port}"
+
+    if not ffmpeg_exists():
+        print("[WARN] 当前环境未找到 ffmpeg，页面可访问但无法执行抽帧。")
+
+    if args.open_browser:
+        webbrowser.open(url)
+
+    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    print(f"Server running on {url}")
     server.serve_forever()
