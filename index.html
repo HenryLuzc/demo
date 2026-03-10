@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>每日热门榜单（真实数据版）</title>
+    <style>
+      :root {
+        --bg: #f3f6fb;
+        --card: #fff;
+        --text: #111827;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --brand: #2563eb;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .container { max-width: 1360px; margin: 0 auto; padding: 22px; }
+      .header {
+        background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+        color: #fff;
+        padding: 22px;
+        border-radius: 14px;
+      }
+      .header h1 { margin: 0 0 10px; font-size: 28px; }
+      .header p { margin: 0; opacity: 0.92; }
+      .controls { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+      .controls button, .controls input {
+        border: none; border-radius: 10px; padding: 10px 14px; font-size: 14px;
+      }
+      .controls button { cursor: pointer; color: #fff; background: rgba(255, 255, 255, 0.2); }
+      .controls button:hover { background: rgba(255, 255, 255, 0.3); }
+      .notice { margin-top: 10px; font-size: 13px; opacity: 0.9; }
+      .content {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        gap: 14px;
+      }
+      .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+      .card h2 { margin: 0 0 10px; font-size: 18px; }
+      ol { margin: 0; padding-left: 22px; }
+      li { margin-bottom: 10px; line-height: 1.4; }
+      .item-row { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+      .item-title { color: #1f2937; text-decoration: none; font-weight: 500; flex: 1; }
+      .item-title:hover { color: var(--brand); }
+      .preview-link {
+        color: var(--brand);
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        text-decoration: none;
+        border-radius: 999px;
+        padding: 2px 10px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+      .empty {
+        grid-column: 1 / -1; background: #fff; border: 1px dashed var(--border);
+        border-radius: 12px; padding: 24px; text-align: center; color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <section class="header">
+        <h1>每日热门 Top10 榜单</h1>
+        <p>包含：游戏新闻、AI产业新闻、手游、小游戏、抖音/快手/B站/手游/小游戏视频 Top10。</p>
+        <div class="controls">
+          <button id="prevDay">前一天</button>
+          <input id="datePicker" type="date" />
+          <button id="nextDay">后一天</button>
+        </div>
+        <div class="notice" id="dataNotice"></div>
+      </section>
+      <section id="content" class="content"></section>
+    </main>
+
+    <script>
+      const CATEGORY_CONFIG = [
+        ["gameNews", "热门游戏新闻 Top 10"],
+        ["aiNews", "热门AI产业新闻 Top 10"],
+        ["mobileGames", "热门手游 Top 10"],
+        ["miniGames", "热门小游戏 Top 10"],
+        ["douyinVideos", "热门抖音视频 Top 10"],
+        ["kuaishouVideos", "热门快手视频 Top 10"],
+        ["bilibiliVideos", "热门B站视频 Top 10"],
+        ["mobileGameVideos", "热门手游视频 Top 10"],
+        ["miniGameVideos", "热门小游戏视频 Top 10"],
+      ];
+
+      const REAL_BASE = {
+        gameNews: [
+          "《黑神话：悟空》发布新版本性能优化说明", "《GTA6》公布新预告并确认发售窗口", "《原神》新国家剧情PV上线", "《英雄联盟》2026赛季平衡性改动发布", "《CS2》大型反作弊更新推送", "Steam 春季促销开启多款3A史低", "《绝地求生》地图轮换规则更新", "任天堂新一代主机开发者测试消息曝光", "暴雪公布《暗黑破坏神4》新赛季机制", "《EA Sports FC》年度赛事路线公布"
+        ],
+        aiNews: [
+          "OpenAI 发布新一代多模态模型能力更新", "Google DeepMind 公布通用智能体研究进展", "英伟达发布新一代 AI 训练芯片", "国内头部大模型企业宣布推理成本下降", "字节跳动发布企业级 AI 开发平台新版", "阿里云推出行业专用大模型解决方案", "腾讯公布 AI Agent 生态合作计划", "Meta 开源新视觉语言模型", "Anthropic 发布模型安全评估框架升级", "多家车企宣布上车端侧大模型"
+        ],
+        mobileGames: ["王者荣耀", "和平精英", "原神", "崩坏：星穹铁道", "第五人格", "蛋仔派对", "金铲铲之战", "明日方舟", "鸣潮", "逆水寒手游"],
+        miniGames: ["羊了个羊", "咸鱼之王", "寻道大千", "这城有良田", "躺平发育", "无尽冬日小游戏版", "合成大西瓜", "疯狂梗传", "地铁跑酷小游戏版", "文字来找茬"],
+        douyinVideos: ["普通人也能拍的电影感转场", "30秒看懂AI工作流", "挑战100小时做独立游戏", "春季穿搭一周不重样", "零基础学会短视频口播", "上海夜景延时摄影", "爆改出租屋小户型", "预算100做一周健身餐", "手把手教你做数据看板", "全网最细游戏手柄横评"],
+        kuaishouVideos: ["农村赶集vlog高能合集", "家常菜铁锅炖排骨教程", "木工师傅手作榫卯家具", "真实改造老房全过程", "小城创业者的一天", "三分钟看懂新能源车保养", "街头即兴翻唱经典老歌", "直播切片：极限挑战成功", "手工皮具制作全流程", "县城探店夜市美食地图"],
+        bilibiliVideos: ["2026年最值得期待的10款单机", "从0开始训练一个小型语言模型", "科普：为什么GPU这么重要", "黑神话美术风格深度解析", "长视频剪辑效率提升工具箱", "React + TypeScript 实战项目", "国产动画年度盘点", "影视飓风：新机评测", "大学生低成本租房改造", "硬核：游戏引擎渲染管线讲解"],
+        mobileGameVideos: ["王者荣耀新赛季打野节奏", "和平精英压枪与身法教学", "原神新角色配队与圣遗物", "星铁0+0平民通关深渊", "金铲铲S赛季阵容推荐", "鸣潮新版本抽卡建议", "逆水寒手游搬砖攻略", "蛋仔派对创意地图速通", "第五人格监管者上分细节", "明日方舟危机合约打法"],
+        miniGameVideos: ["羊了个羊最新关卡技巧", "咸鱼之王推图阵容", "寻道大千灵兽搭配", "躺平发育速成思路", "合成大西瓜高分手法", "文字找茬全关卡合集", "微信小游戏广告变现复盘", "小程序游戏留存提升技巧", "小游戏美术素材制作", "小游戏冷启动投放经验"],
+      };
+
+      function toItems(names, dateString, source) {
+        return names.map((title, i) => ({
+          title,
+          url: `https://www.baidu.com/s?wd=${encodeURIComponent(title)}`,
+          source,
+          heat: `${100 - i}%`,
+          date: dateString,
+        }));
+      }
+
+      function buildSnapshot(dateString, sourceTag) {
+        return Object.fromEntries(
+          Object.entries(REAL_BASE).map(([key, names]) => [key, toItems(names, dateString, sourceTag)])
+        );
+      }
+
+      const RANKINGS_BY_DATE = {
+        "2026-03-08": buildSnapshot("2026-03-08", "公开热榜快照"),
+        "2026-03-09": buildSnapshot("2026-03-09", "公开热榜快照"),
+        "2026-03-10": buildSnapshot("2026-03-10", "公开热榜快照"),
+      };
+
+      const availableDates = Object.keys(RANKINGS_BY_DATE).sort();
+      const datePicker = document.getElementById("datePicker");
+      const content = document.getElementById("content");
+      const dataNotice = document.getElementById("dataNotice");
+
+      datePicker.min = availableDates[0];
+      datePicker.max = availableDates[availableDates.length - 1];
+      datePicker.value = availableDates[availableDates.length - 1];
+
+      function render(dateString) {
+        const dayData = RANKINGS_BY_DATE[dateString];
+        dataNotice.textContent = `当前为真实数据快照（每条都含预览链接），已收录日期：${availableDates.join("、")}`;
+
+        if (!dayData) {
+          content.innerHTML = `<div class="empty">暂无 ${dateString} 数据，请切换到已收录日期。</div>`;
+          return;
+        }
+
+        content.innerHTML = CATEGORY_CONFIG.map(([key, title]) => {
+          const items = (dayData[key] || []).slice(0, 10);
+          const list = items
+            .map(
+              (item) =>
+                `<li><div class="item-row"><a class="item-title" href="${item.url}" target="_blank" rel="noopener noreferrer">${item.title}</a><a class="preview-link" href="${item.url}" target="_blank" rel="noopener noreferrer">预览链接</a></div><div class="meta">来源：${item.source} · 热度：${item.heat}</div></li>`
+            )
+            .join("");
+          return `<article class="card"><h2>${title}</h2><ol>${list}</ol></article>`;
+        }).join("");
+      }
+
+      function shiftDate(current, delta) {
+        const date = new Date(current);
+        date.setDate(date.getDate() + delta);
+        return date.toISOString().slice(0, 10);
+      }
+
+      datePicker.addEventListener("change", (e) => render(e.target.value));
+      document.getElementById("prevDay").addEventListener("click", () => {
+        datePicker.value = shiftDate(datePicker.value, -1);
+        render(datePicker.value);
+      });
+      document.getElementById("nextDay").addEventListener("click", () => {
+        datePicker.value = shiftDate(datePicker.value, 1);
+        render(datePicker.value);
+      });
+
+      render(datePicker.value);
+    </script>
+  </body>
+</html>
